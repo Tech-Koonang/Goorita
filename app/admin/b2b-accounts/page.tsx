@@ -132,7 +132,7 @@ export default function AdminB2BAccounts() {
                       </div>
                       <div>
                         <p className="text-sm font-bold text-slate-800">{acc.companyName}</p>
-                        <p className="text-xs text-slate-500 font-medium">NPWP: {acc.taxId}</p>
+                        <p className="text-xs text-slate-500 font-medium">Corporate ID: {acc.taxId}</p>
                       </div>
                     </div>
                   </td>

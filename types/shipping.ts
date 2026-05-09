@@ -6,6 +6,8 @@ export interface PackageItem {
   height?: number;
   weight: number;
   valueUsd: number;
+  unpackedPhoto?: string;
+  boxPhoto?: string;
 }
 
 export interface Address {
@@ -27,8 +29,8 @@ export type B2BStatus = 'Pending' | 'Approved' | 'Rejected' | 'None';
 export interface ShipmentHistoryItem {
   id: string;
   date: string;
-  sender: Address;
-  receiver: Address;
+  shipper: Address;
+  consignee: Address;
   service: 'Saver' | 'Express';
   items: number;
   actualWeight: number;
@@ -36,6 +38,8 @@ export interface ShipmentHistoryItem {
   price: string;
   insurance: string;
   total: string;
+  incoterm?: 'DDU' | 'DDP';
+  eta?: string;
   status: string;
   statusColor: string;
   paymentStatus: PaymentStatus;

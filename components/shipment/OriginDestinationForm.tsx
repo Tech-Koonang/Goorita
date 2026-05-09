@@ -74,8 +74,8 @@ export function OriginDestinationForm({ origin, destination, confData, isCompact
         </div>
       )}
       
-      {/* 1. Sender Details */}
-      {(mode === 'both' || mode === 'sender') && (
+      {/* 1. Shipper Details */}
+      {(mode === 'both' || mode === 'shipper') && (
         <motion.div 
           whileHover={{ y: -2 }}
           className={cn(
@@ -87,7 +87,7 @@ export function OriginDestinationForm({ origin, destination, confData, isCompact
             <div>
               <p className="text-[14px] font-black uppercase tracking-[0.05em] text-slate-800 flex items-center gap-2">
                 <span className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-[12px] shadow-sm">1</span>
-                Sender Details
+                Shipper Details
               </p>
               <p className="text-[12px] text-slate-500 mt-1 font-medium italic ml-10">International outgoing from Indonesia.</p>
             </div>
@@ -100,7 +100,7 @@ export function OriginDestinationForm({ origin, destination, confData, isCompact
               </label>
               <input 
                 type="text" 
-                placeholder="Enter sender's full name"
+                placeholder="Enter shipper's full name"
                 className="px-3 py-2 border border-[#e2e8f0] rounded-lg text-[13px] outline-none focus:border-primary w-full shadow-sm transition-all focus:ring-2 focus:ring-primary/20"
                 value={origin.name}
                 onChange={(e) => origin.setName(e.target.value)}
@@ -215,8 +215,8 @@ export function OriginDestinationForm({ origin, destination, confData, isCompact
       </motion.div>
     )}
 
-      {/* 2. Receiver Details */}
-      {(mode === 'both' || mode === 'receiver') && (
+      {/* 2. Consignee Details */}
+      {(mode === 'both' || mode === 'consignee') && (
         <motion.div 
           whileHover={{ y: -2 }}
           className={cn(
@@ -228,7 +228,7 @@ export function OriginDestinationForm({ origin, destination, confData, isCompact
             <div>
               <p className="text-[14px] font-black uppercase tracking-[0.05em] text-slate-800 flex items-center gap-2">
                 <span className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center text-[12px] shadow-sm">2</span>
-                Receiver Details
+                Consignee Details
               </p>
               <p className="text-[12px] text-slate-500 mt-1 font-medium italic ml-10">Package destination information.</p>
             </div>
@@ -241,7 +241,7 @@ export function OriginDestinationForm({ origin, destination, confData, isCompact
               </label>
               <input 
                 type="text" 
-                placeholder="Enter receiver's full name"
+                placeholder="Enter consignee's full name"
                 className="px-3 py-2 border border-[#e2e8f0] rounded-lg text-[13px] outline-none focus:border-primary w-full shadow-sm transition-all focus:ring-2 focus:ring-primary/20"
                 value={destination.name}
                 onChange={(e) => destination.setName(e.target.value)}
@@ -308,9 +308,82 @@ export function OriginDestinationForm({ origin, destination, confData, isCompact
               }}
             >
               <option value="">Select country...</option>
-              {LOCATIONS.destinations.map(d => (
-                <option key={d.code} value={d.code}>{d.country}</option>
-              ))}
+              <optgroup label="Southeast Asia">
+                <option value="SG">Singapore</option>
+                <option value="MY">Malaysia</option>
+                <option value="PH">Philippines</option>
+                <option value="TH">Thailand</option>
+                <option value="VN">Vietnam</option>
+                <option value="BN">Brunei</option>
+                <option value="KH">Cambodia</option>
+                <option value="LA">Laos</option>
+                <option value="MM">Myanmar</option>
+                <option value="TL">Timor-Leste</option>
+              </optgroup>
+              <optgroup label="Other Asia">
+                <option value="JP">Japan</option>
+                <option value="KR">South Korea</option>
+                <option value="HK">Hong Kong</option>
+                <option value="CN">China</option>
+                <option value="IN">India</option>
+                <option value="BD">Bangladesh</option>
+                <option value="MV">Maldives</option>
+                <option value="NP">Nepal</option>
+                <option value="PK">Pakistan</option>
+                <option value="LK">Sri Lanka</option>
+                <option value="MO">Macau</option>
+                <option value="TW">Taiwan</option>
+              </optgroup>
+              <optgroup label="Australia & Pacific">
+                <option value="AU">Australia</option>
+                <option value="NZ">New Zealand</option>
+                <option value="PG">Papua New Guinea</option>
+              </optgroup>
+              <optgroup label="Europe">
+                <option value="NL">Netherlands</option>
+                <option value="BE">Belgium</option>
+                <option value="LU">Luxembourg</option>
+                <option value="DE">Germany</option>
+                <option value="FR">France</option>
+                <option value="DK">Denmark</option>
+                <option value="IT">Italy</option>
+                <option value="MC">Monaco</option>
+                <option value="FI">Finland</option>
+                <option value="IE">Ireland</option>
+                <option value="AT">Austria</option>
+                <option value="PT">Portugal</option>
+                <option value="ES">Spain</option>
+                <option value="SE">Sweden</option>
+                <option value="PL">Poland</option>
+                <option value="CZ">Czech Republic</option>
+                <option value="BG">Bulgaria</option>
+                <option value="EE">Estonia</option>
+                <option value="GR">Greece</option>
+                <option value="HU">Hungary</option>
+                <option value="HR">Croatia</option>
+                <option value="LV">Latvia</option>
+                <option value="LT">Lithuania</option>
+                <option value="RO">Romania</option>
+                <option value="SI">Slovenia</option>
+                <option value="SK">Slovakia</option>
+                <option value="TR">Turkey</option>
+                <option value="ZA">South Africa</option>
+              </optgroup>
+              <optgroup label="Middle East">
+                <option value="SA">Saudi Arabia</option>
+                <option value="EG">Egypt</option>
+                <option value="AE">UAE</option>
+                <option value="BH">Bahrain</option>
+                <option value="JO">Jordan</option>
+                <option value="KW">Kuwait</option>
+                <option value="OM">Oman</option>
+                <option value="QA">Qatar</option>
+              </optgroup>
+              <optgroup label="Americas">
+                <option value="US">USA</option>
+                <option value="CA">Canada</option>
+                <option value="MX">Mexico</option>
+              </optgroup>
             </select>
           </div>
           <div className="flex flex-col gap-[6px] relative">

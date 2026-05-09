@@ -29,11 +29,11 @@ function CreateShipmentContent() {
     }
   }, []);
   
-  // Sender State
-  const [senderName, setSenderName] = useState(() => searchParams.has('origin_city') ? 'John Doe' : '');
-  const [senderPhone, setSenderPhone] = useState(() => searchParams.has('origin_city') ? '+628123456789' : '');
-  const [senderEmail, setSenderEmail] = useState(() => searchParams.has('origin_city') ? 'john@example.com' : '');
-  const [senderAddress, setSenderAddress] = useState(() => searchParams.has('origin_city') ? 'Jl. Sudirman No 10' : '');
+  // Shipper State
+  const [shipperName, setShipperName] = useState(() => searchParams.has('origin_city') ? 'John Doe' : '');
+  const [shipperPhone, setShipperPhone] = useState(() => searchParams.has('origin_city') ? '+628123456789' : '');
+  const [shipperEmail, setShipperEmail] = useState(() => searchParams.has('origin_city') ? 'john@example.com' : '');
+  const [shipperAddress, setShipperAddress] = useState(() => searchParams.has('origin_city') ? 'Jl. Sudirman No 10' : '');
   const [originCountry, setOriginCountry] = useState('ID');
   
   const [originCity, setOriginCity] = useState(() => {
@@ -60,11 +60,11 @@ function CreateShipmentContent() {
     return searchParams.has('origin_city') ? '1000' : '';
   });
 
-  // Receiver State
-  const [receiverName, setReceiverName] = useState(() => searchParams.has('destination_country') ? 'Jane Smith' : '');
-  const [receiverPhone, setReceiverPhone] = useState(() => searchParams.has('destination_country') ? '+6591234567' : '');
-  const [receiverEmail, setReceiverEmail] = useState(() => searchParams.has('destination_country') ? 'jane@example.com' : '');
-  const [receiverAddress, setReceiverAddress] = useState(() => searchParams.has('destination_country') ? '123 Main Street' : '');
+  // Consignee State
+  const [consigneeName, setConsigneeName] = useState(() => searchParams.has('destination_country') ? 'Jane Smith' : '');
+  const [consigneePhone, setConsigneePhone] = useState(() => searchParams.has('destination_country') ? '+6591234567' : '');
+  const [consigneeEmail, setConsigneeEmail] = useState(() => searchParams.has('destination_country') ? 'jane@example.com' : '');
+  const [consigneeAddress, setConsigneeAddress] = useState(() => searchParams.has('destination_country') ? '123 Main Street' : '');
   
   const [destCountry, setDestCountry] = useState(() => {
     const q = searchParams.get('destination_country')?.toLowerCase();
@@ -106,6 +106,7 @@ function CreateShipmentContent() {
   const [isRemoteArea, setIsRemoteArea] = useState(false);
 
   const [aiInput, setAiInput] = useState<string | null>(searchParams.get('ai_input'));
+  const [itemType, setItemType] = useState(() => searchParams.get('item_type') || 'Goods');
 
   // Confidence state
   const getConf = (key: string) => searchParams.get(`${key}_conf`) || null;
@@ -147,7 +148,11 @@ function CreateShipmentContent() {
   const missingFields = [];
   if (!destCountry) missingFields.push('destination country');
   if (packages.some(p => p.weight <= 0)) missingFields.push('package weight');
-  if (packages.some(p => p.size === 'Custom' && (p.length === 0 || p.width === 0 || p.height === 0))) missingFields.push('dimensions');
+  
+  const isDocuments = itemType.toLowerCase() === 'documents';
+  if (!isDocuments && packages.some(p => p.size === 'Custom' && (!p.length || !p.width || !p.height))) {
+    missingFields.push('dimensions');
+  }
 
 
   // Remove the problematic effect since we now initialize state directly
@@ -174,38 +179,38 @@ function CreateShipmentContent() {
   const handleAutoFill = (data: any) => {
     // Determine target from simulated data
     if (data.destCity?.toLowerCase().includes('singapore')) {
-      setSenderName('Wayan Suparta');
-      setSenderPhone('+628123456789');
-      setSenderEmail('wayan@example.com');
-      setSenderAddress('Jl. Sudirman No 10, Jakarta Selatan');
+      setShipperName('Wayan Suparta');
+      setShipperPhone('+628123456789');
+      setShipperEmail('wayan@example.com');
+      setShipperAddress('Jl. Sudirman No 10, Jakarta Selatan');
       setOriginCountry('ID');
       setOriginPostal('12190');
       setOriginCity('Jakarta Selatan');
       setOriginState('DKI Jakarta');
 
-      setReceiverName('Ketut Lempak');
-      setReceiverPhone('+6591234567');
-      setReceiverEmail('ketut@example.com');
-      setReceiverAddress('123 Orchard Road, #05-12');
+      setConsigneeName('Ketut Lempak');
+      setConsigneePhone('+6591234567');
+      setConsigneeEmail('ketut@example.com');
+      setConsigneeAddress('123 Orchard Road, #05-12');
       setDestCountry('SG');
       setDestPostal('238823');
       setDestCity('Singapore');
       setDestState('Singapore');
       setIsRemoteArea(false);
     } else {
-      setSenderName('Budi Santoso');
-      setSenderPhone('+628123456789');
-      setSenderEmail('budi@example.com');
-      setSenderAddress('Jl. Sudirman No 10, Jakarta Selatan');
+      setShipperName('Budi Santoso');
+      setShipperPhone('+628123456789');
+      setShipperEmail('budi@example.com');
+      setShipperAddress('Jl. Sudirman No 10, Jakarta Selatan');
       setOriginCountry('ID');
       setOriginPostal('12190');
       setOriginCity('Jakarta Selatan');
       setOriginState('DKI Jakarta');
 
-      setReceiverName('Alice Smith');
-      setReceiverPhone('+14155552671');
-      setReceiverEmail('alice.smith@example.com');
-      setReceiverAddress('123 Mission St, Apt 4B');
+      setConsigneeName('Alice Smith');
+      setConsigneePhone('+14155552671');
+      setConsigneeEmail('alice.smith@example.com');
+      setConsigneeAddress('123 Mission St, Apt 4B');
       setDestCountry('US');
       setDestPostal('94105');
       setDestCity('San Francisco');
@@ -336,15 +341,15 @@ function CreateShipmentContent() {
                 <OriginDestinationForm 
                   confData={confData}
                   origin={{
-                    name: senderName, phone: senderPhone, email: senderEmail, address: senderAddress,
+                    name: shipperName, phone: shipperPhone, email: shipperEmail, address: shipperAddress,
                     country: originCountry, postal: originPostal, city: originCity, state: originState,
-                    setName: setSenderName, setPhone: setSenderPhone, setEmail: setSenderEmail, setAddress: setSenderAddress,
+                    setName: setShipperName, setPhone: setShipperPhone, setEmail: setShipperEmail, setAddress: setShipperAddress,
                     setCountry: setOriginCountry, setPostal: setOriginPostal, setCity: setOriginCity, setState: setOriginState
                   }}
                   destination={{
-                    name: receiverName, phone: receiverPhone, email: receiverEmail, address: receiverAddress,
+                    name: consigneeName, phone: consigneePhone, email: consigneeEmail, address: consigneeAddress,
                     country: destCountry, postal: destPostal, city: destCity, state: destState,
-                    setName: setReceiverName, setPhone: setReceiverPhone, setEmail: setReceiverEmail, setAddress: setReceiverAddress,
+                    setName: setConsigneeName, setPhone: setConsigneePhone, setEmail: setConsigneeEmail, setAddress: setConsigneeAddress,
                     setCountry: setDestCountry, setPostal: setDestPostal, setCity: setDestCity, setState: setDestState,
                     setIsRemoteArea
                   }}
@@ -353,7 +358,7 @@ function CreateShipmentContent() {
 
               {/* Package Builder */}
               <motion.div variants={itemVariants}>
-                <PackageBuilder packages={packages} setPackages={setPackages} />
+                <PackageBuilder packages={packages} setPackages={setPackages} itemType={itemType} />
               </motion.div>
             </div>
 
@@ -386,12 +391,14 @@ function CreateShipmentContent() {
                     </span>
                     <span className="font-black text-slate-900 bg-slate-50 px-2 py-0.5 rounded">{Math.ceil(totalChargeableWeight)} kg</span>
                   </div>
-                  <div className="flex justify-between items-center text-[13px] text-slate-600">
-                    <span className="font-medium">Declared Value</span>
-                    <span className="font-black text-slate-900 bg-slate-50 px-2 py-0.5 rounded">
-                      ${packages.reduce((acc, p) => acc + (p.valueUsd || 0), 0)}
-                    </span>
-                  </div>
+                  {!isDocuments && (
+                    <div className="flex justify-between items-center text-[13px] text-slate-600">
+                      <span className="font-medium">Declared Value</span>
+                      <span className="font-black text-slate-900 bg-slate-50 px-2 py-0.5 rounded">
+                        ${packages.reduce((acc, p) => acc + (p.valueUsd || 0), 0)}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {isRemoteArea && (
@@ -462,21 +469,21 @@ function CreateShipmentContent() {
             isPickupAvailable={isPickupAvailable}
             isRemoteArea={isRemoteArea}
             onBack={() => setStep(1)}
-            sender={{
-              name: senderName,
-              phone: senderPhone,
-              email: senderEmail,
-              street: senderAddress,
+            shipper={{
+              name: shipperName,
+              phone: shipperPhone,
+              email: shipperEmail,
+              street: shipperAddress,
               city: originCity,
               state: originState,
               zip: originPostal,
               country: 'Indonesia'
             }}
-            receiver={{
-              name: receiverName,
-              phone: receiverPhone,
-              email: receiverEmail,
-              street: receiverAddress,
+            consignee={{
+              name: consigneeName,
+              phone: consigneePhone,
+              email: consigneeEmail,
+              street: consigneeAddress,
               city: destCity,
               state: destState,
               zip: destPostal,

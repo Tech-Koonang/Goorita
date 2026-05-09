@@ -27,7 +27,7 @@ const MOCK_HISTORY: (ShipmentHistoryItem & { dest: string })[] = [
     statusColor: 'bg-yellow-100 text-yellow-800',
     paymentStatus: 'Paid',
     paymentMethod: 'Wallet',
-    sender: {
+    shipper: {
       name: 'John Doe',
       street: 'Jl. Kemang Raya No. 12',
       city: 'Jakarta South',
@@ -36,7 +36,7 @@ const MOCK_HISTORY: (ShipmentHistoryItem & { dest: string })[] = [
       country: 'Indonesia',
       phone: '+62 812 3456 7890'
     },
-    receiver: {
+    consignee: {
       name: 'Jane Smith',
       street: '123 Orchard Road, #05-12',
       city: 'Singapore',
@@ -63,7 +63,7 @@ const MOCK_HISTORY: (ShipmentHistoryItem & { dest: string })[] = [
     statusColor: 'bg-green-100 text-green-800',
     paymentStatus: 'Pending Payment',
     paymentMethod: 'Credit Terms',
-    sender: {
+    shipper: {
       name: 'PT. Export Sukses',
       street: 'Jl. Kemang Raya No. 12',
       city: 'Jakarta South',
@@ -72,7 +72,7 @@ const MOCK_HISTORY: (ShipmentHistoryItem & { dest: string })[] = [
       country: 'Indonesia',
       phone: '+62 812 3456 7890'
     },
-    receiver: {
+    consignee: {
       name: 'Alice Wonders',
       street: '456 Broadway Ave',
       city: 'New York',
@@ -98,7 +98,7 @@ const MOCK_HISTORY: (ShipmentHistoryItem & { dest: string })[] = [
     status: 'Order Created', 
     statusColor: 'bg-gray-100 text-gray-800',
     paymentStatus: 'Unpaid',
-    sender: {
+    shipper: {
       name: 'PT. Makmur Sejahtera',
       street: 'Jl. Kemang Raya No. 12',
       city: 'Jakarta South',
@@ -107,7 +107,7 @@ const MOCK_HISTORY: (ShipmentHistoryItem & { dest: string })[] = [
       country: 'Indonesia',
       phone: '+62 812 3456 7890'
     },
-    receiver: {
+    consignee: {
       name: 'Ryosuke Tanaka',
       street: '2-1-1 Nihonbashi',
       city: 'Chuo-ku, Tokyo',
@@ -133,7 +133,7 @@ const MOCK_HISTORY: (ShipmentHistoryItem & { dest: string })[] = [
     status: 'Waiting for Payment', 
     statusColor: 'bg-orange-100 text-orange-800',
     paymentStatus: 'Unpaid',
-    sender: {
+    shipper: {
       name: 'John Doe',
       street: 'Jl. Kemang Raya No. 12',
       city: 'Jakarta South',
@@ -142,7 +142,7 @@ const MOCK_HISTORY: (ShipmentHistoryItem & { dest: string })[] = [
       country: 'Indonesia',
       phone: '+62 812 3456 7890'
     },
-    receiver: {
+    consignee: {
       name: 'Charlie Brown',
       street: '10 Downing St',
       city: 'London',
@@ -401,10 +401,12 @@ export default function ShipmentHistory() {
             insurance: parseInt(selectedShipment.insurance.replace(/[^0-9]/g, '')),
             surcharge: 0, // Simplified for history view
             service: selectedShipment.service,
+            incoterm: selectedShipment.incoterm || 'DDU',
+            eta: selectedShipment.eta || '3-5 days',
             items: selectedShipment.items,
             weight: selectedShipment.actualWeight,
-            receiver: selectedShipment.receiver,
-            sender: selectedShipment.sender
+            consignee: selectedShipment.consignee,
+            shipper: selectedShipment.shipper
           }}
           onSuccess={() => setIsPaymentOpen(false)}
         />

@@ -24,52 +24,55 @@ export function AirwayBill({ shipment }: AirwayBillProps) {
           />
           <p className="text-[10px] text-slate-500 font-medium">International Door-to-Door Delivery</p>
         </div>
-        <div className="text-right">
-          <h1 className="text-2xl font-black tracking-tighter">AIRWAY BILL</h1>
-          <p className="text-sm font-bold text-primary mt-1">{shipment.id}</p>
-          <p className="text-xs text-slate-500 font-medium">{shipment.date}</p>
-        </div>
+          <div className="text-right">
+            <h1 className="text-2xl font-black tracking-tighter">AIRWAY BILL</h1>
+            <p className="text-sm font-bold text-primary mt-1">{shipment.id}</p>
+            <p className="text-[10px] text-slate-500 font-medium">Date: {shipment.date}</p>
+            {shipment.eta && <p className="text-[10px] text-primary font-black uppercase mt-0.5 whitespace-nowrap">ETA: {shipment.eta}</p>}
+          </div>
       </div>
 
       {/* Addresses */}
       <div className="grid grid-cols-2 gap-0 border border-black mb-6">
         <div className="p-4 border-r border-black">
-          <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Sender (From)</h2>
+          <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Shipper (From)</h2>
           <div className="space-y-0.5">
-            <p className="font-bold text-sm uppercase">{shipment.sender.name}</p>
-            {shipment.sender.company && <p className="text-xs">{shipment.sender.company}</p>}
-            <p className="text-xs">{shipment.sender.street}</p>
-            <p className="text-xs">{shipment.sender.city}, {shipment.sender.state} {shipment.sender.zip}</p>
-            <p className="text-xs font-bold">{shipment.sender.country}</p>
-            <p className="text-xs mt-2 italic">Tel: {shipment.sender.phone}</p>
+            <p className="font-bold text-sm uppercase">{shipment.shipper.name}</p>
+            {shipment.shipper.company && <p className="text-xs">{shipment.shipper.company}</p>}
+            <p className="text-xs">{shipment.shipper.street}</p>
+            <p className="text-xs">{shipment.shipper.city}, {shipment.shipper.state} {shipment.shipper.zip}</p>
+            <p className="text-xs font-bold">{shipment.shipper.country}</p>
+            <p className="text-xs mt-2 italic">Tel: {shipment.shipper.phone}</p>
           </div>
         </div>
         <div className="p-4">
-          <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Receiver (To)</h2>
+          <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Consignee (To)</h2>
           <div className="space-y-0.5">
-            <p className="font-bold text-sm uppercase">{shipment.receiver.name}</p>
-            {shipment.receiver.company && <p className="text-xs">{shipment.receiver.company}</p>}
-            <p className="text-xs">{shipment.receiver.street}</p>
-            <p className="text-xs">{shipment.receiver.city}, {shipment.receiver.state} {shipment.receiver.zip}</p>
-            <p className="text-xs font-bold">{shipment.receiver.country}</p>
-            <p className="text-xs mt-2 italic">Tel: {shipment.receiver.phone}</p>
+            <p className="font-bold text-sm uppercase">{shipment.consignee.name}</p>
+            {shipment.consignee.company && <p className="text-xs">{shipment.consignee.company}</p>}
+            <p className="text-xs">{shipment.consignee.street}</p>
+            <p className="text-xs">{shipment.consignee.city}, {shipment.consignee.state} {shipment.consignee.zip}</p>
+            <p className="text-xs font-bold">{shipment.consignee.country}</p>
+            <p className="text-xs mt-2 italic">Tel: {shipment.consignee.phone}</p>
           </div>
         </div>
       </div>
 
       {/* Shipment Specs */}
       <div className="border border-black mb-6">
-        <div className="grid grid-cols-4 bg-slate-50 border-b border-black">
-          <div className="px-3 py-2 text-[10px] font-bold uppercase border-r border-black">Service Type</div>
+        <div className="grid grid-cols-5 bg-slate-50 border-b border-black">
+          <div className="px-3 py-2 text-[10px] font-bold uppercase border-r border-black">Service</div>
+          <div className="px-3 py-2 text-[10px] font-bold uppercase border-r border-black">Incoterm</div>
           <div className="px-3 py-2 text-[10px] font-bold uppercase border-r border-black">Pieces</div>
-          <div className="px-3 py-2 text-[10px] font-bold uppercase border-r border-black">Actual Weight</div>
-          <div className="px-3 py-2 text-[10px] font-bold uppercase">Chargeable Weight</div>
+          <div className="px-3 py-2 text-[10px] font-bold uppercase border-r border-black">Act. Weight</div>
+          <div className="px-3 py-2 text-[10px] font-bold uppercase">Chg. Weight</div>
         </div>
-        <div className="grid grid-cols-4">
-          <div className="px-3 py-3 text-sm font-bold border-r border-black">{shipment.service}</div>
-          <div className="px-3 py-3 text-sm font-medium border-r border-black">{shipment.items} BOX</div>
-          <div className="px-3 py-3 text-sm font-medium border-r border-black">{shipment.actualWeight} KG</div>
-          <div className="px-3 py-3 text-sm font-bold">{shipment.chargeableWeight} KG</div>
+        <div className="grid grid-cols-5">
+          <div className="px-3 py-3 text-xs font-bold border-r border-black">{shipment.service}</div>
+          <div className="px-3 py-3 text-xs font-black border-r border-black">{shipment.incoterm || 'DDU'}</div>
+          <div className="px-3 py-3 text-xs font-medium border-r border-black">{shipment.items} BOX</div>
+          <div className="px-3 py-3 text-xs font-medium border-r border-black">{shipment.actualWeight} KG</div>
+          <div className="px-3 py-3 text-xs font-bold">{shipment.chargeableWeight} KG</div>
         </div>
       </div>
 

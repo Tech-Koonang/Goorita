@@ -24,10 +24,12 @@ interface PaymentGatewayProps {
     insurance: number;
     surcharge: number;
     service: string;
+    incoterm: 'DDU' | 'DDP';
+    eta: string;
     items: number;
     weight: number;
-    receiver: any;
-    sender: any;
+    consignee: any;
+    shipper: any;
   };
   onSuccess: (method: PaymentMethod) => void;
 }
@@ -469,9 +471,9 @@ export function PaymentGateway({ isOpen, onClose, shipmentData, onSuccess }: Pay
                  status: 'Paid',
                  statusColor: 'bg-green-100 text-green-800',
                  paymentStatus: 'Paid',
-                 paymentMethod: selectedMethod || 'Wallet',
-                 sender: shipmentData.sender,
-                 receiver: shipmentData.receiver
+                 paymentMethod: selectedMethod || 'Wallet', incoterm: shipmentData.incoterm, eta: shipmentData.eta,
+                 shipper: shipmentData.shipper,
+                 consignee: shipmentData.consignee
                }}
              />
           </div>
