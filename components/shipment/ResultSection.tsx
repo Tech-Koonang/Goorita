@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 
 export function ResultSection({ 
   packages, originState, destCountry, isPickupAvailable, isRemoteArea, onBack,
-  sender, receiver
+  shipper, consignee
 }: any) {
   const router = useRouter();
   const { isLoggedIn, openAuthModal } = useAuth();
@@ -21,6 +21,7 @@ export function ResultSection({
   const [selectedService, setSelectedService] = useState<'saver' | 'express'>('saver');
   const [showAllOptions, setShowAllOptions] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+  const [selectedIncoterm, setSelectedIncoterm] = useState<'DDU' | 'DDP'>('DDU');
   
   // New State for B2C vs B2B
   const [customerType, setCustomerType] = useState<'B2C' | 'B2B'>('B2C');
@@ -30,6 +31,9 @@ export function ResultSection({
   const [companyEmail, setCompanyEmail] = useState('');
   const [isSubmittingCredit, setIsSubmittingCredit] = useState(false);
   const [showPendingCredit, setShowPendingCredit] = useState(false);
+
+  // Mock Corporate Credit (In real world, this would come from a user/corporate profile state)
+  const [corporateCredit, setCorporateCredit] = useState(5000000); // 5 Million IDR
 
   // Load state from session storage on mount
   useEffect(() => {
@@ -118,7 +122,7 @@ export function ResultSection({
   };
 
   const estDelivery = selectedService === 'saver' ? rateZone.transitSaver : rateZone.transitExpress;
-  const serviceNameWithEst = `${currentServiceName} · Est. ${estDelivery}`;
+  const serviceNameWithEst = `${currentServiceName} · ETA: ${estDelivery}`;
   const originName = LOCATIONS.originProvinces.find(o => o.code === originState)?.name || originState;
   const destName = LOCATIONS.destinations.find(d => d.code === destCountry)?.country || destCountry;
   const packageDetails = packages.length === 1 
@@ -209,7 +213,7 @@ export function ResultSection({
                   <span className="p-1.5 bg-primary/10 rounded-lg text-primary"><Truck className="h-4 w-4" /></span>
                   Goorita Saver
                 </p>
-                <p className="text-[12px] text-slate-500 mt-1 font-medium ml-9">Est. Delivery: {rateZone.transitSaver}</p>
+                <p className="text-[12px] text-slate-500 mt-1 font-medium ml-9">ETA: {rateZone.transitSaver}</p>
               </div>
               <motion.p 
                 key={saverTotal} 
@@ -255,7 +259,7 @@ export function ResultSection({
                     <span className="p-1.5 bg-slate-100 rounded-lg text-slate-400"><Truck className="h-4 w-4" /></span>
                     Goorita Air Express
                   </p>
-                  <p className="text-[12px] text-slate-500 mt-1 font-medium ml-9">Est. Delivery: {rateZone.transitExpress}</p>
+                  <p className="text-[12px] text-slate-500 mt-1 font-medium ml-9">ETA: {rateZone.transitExpress}</p>
                 </div>
                 <motion.p 
                   key={expressTotal} 
@@ -281,6 +285,28 @@ export function ResultSection({
             </div>
             <div className="h-5 w-5 rounded-full bg-primary/10 text-primary flex items-center justify-center mt-1">
               <CheckCircle2 className="h-4 w-4" />
+            </div>
+          </div>
+
+          <div className="border-t border-[#e2e8f0] pt-6 mt-2">
+            <p className="text-[14px] font-black uppercase tracking-[0.05em] text-slate-800 mb-4">Incoterms</p>
+            <div className="flex gap-4">
+              <label className={cn(
+                "flex-1 flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-all",
+                selectedIncoterm === 'DDU' ? "border-primary bg-primary-50" : "border-slate-100 bg-slate-50 hover:border-slate-200"
+              )}>
+                <input type="radio" name="incoterm" value="DDU" checked={selectedIncoterm === 'DDU'} onChange={() => setSelectedIncoterm('DDU')} className="hidden" />
+                <span className="font-black text-sm text-slate-800">DDU</span>
+                <span className="text-[10px] text-slate-500 font-medium leading-tight mt-1">Delivery Duty Unpaid·Receiver pays duties/taxes at destination.</span>
+              </label>
+              <label className={cn(
+                "flex-1 flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-all",
+                selectedIncoterm === 'DDP' ? "border-primary bg-primary-50" : "border-slate-100 bg-slate-50 hover:border-slate-200"
+              )}>
+                <input type="radio" name="incoterm" value="DDP" checked={selectedIncoterm === 'DDP'} onChange={() => setSelectedIncoterm('DDP')} className="hidden" />
+                <span className="font-black text-sm text-slate-800">DDP</span>
+                <span className="text-[10px] text-slate-500 font-medium leading-tight mt-1">Delivery Duty Paid·Sender covers all duties/taxes.</span>
+              </label>
             </div>
           </div>
 
@@ -355,8 +381,8 @@ export function ResultSection({
                       <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} className="w-full text-sm border-gray-300 rounded-lg focus:ring-primary focus:border-primary px-3 py-2 border outline-none" placeholder="PT. Export Sukses" />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">Tax ID (NPWP)</label>
-                      <input type="text" value={taxId} onChange={e => setTaxId(e.target.value)} className="w-full text-sm border-gray-300 rounded-lg focus:ring-primary focus:border-primary px-3 py-2 border outline-none" placeholder="00.000.000.0-000.000" />
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Corporate ID</label>
+                      <input type="text" value={taxId} onChange={e => setTaxId(e.target.value)} className="w-full text-sm border-gray-300 rounded-lg focus:ring-primary focus:border-primary px-3 py-2 border outline-none" placeholder="CORP-XXXX-XXXX" />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -402,6 +428,10 @@ export function ResultSection({
                   <span className="font-bold text-slate-800 text-right">{serviceNameWithEst}</span>
                 </div>
                 <div className="flex justify-between text-sm">
+                  <span className="text-slate-500 font-medium">Incoterms</span>
+                  <span className="font-bold text-slate-800">{selectedIncoterm}</span>
+                </div>
+                <div className="flex justify-between text-sm">
                   <span className="text-slate-500 font-medium">Base Rate</span>
                   <span className="font-bold text-slate-800">{formatIDR(currentBase)}</span>
                 </div>
@@ -418,6 +448,18 @@ export function ResultSection({
                   </div>
                 )}
                 
+                {customerType === 'B2B' && (
+                  <div className="flex justify-between items-center pt-3 border-t border-dashed border-[#e2e8f0] mt-4">
+                    <span className="text-sm font-bold text-slate-600 flex items-center gap-1.5">
+                      <Shield className="h-3.5 w-3.5 text-blue-500" />
+                      Corporate Credit Balance
+                    </span>
+                    <span className={cn("text-sm font-black", corporateCredit >= currentTotal ? "text-green-600" : "text-red-500")}>
+                      {formatIDR(corporateCredit)}
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-center pt-3 border-t border-[#e2e8f0] mt-4">
                   <span className="text-[15px] font-black text-slate-900">Total Amount</span>
                   <span className="text-[18px] font-black text-primary">{formatIDR(currentTotal)}</span>
@@ -437,11 +479,17 @@ export function ResultSection({
                   Processing...
                 </>
               ) : customerType === 'B2B' ? (
-                'Apply for Credit Terms'
+                corporateCredit >= currentTotal ? 'Confirm Order' : 'Insufficient Balance'
               ) : (
                 'Proceed to Payment'
               )}
             </motion.button>
+
+            {customerType === 'B2B' && corporateCredit < currentTotal && (
+              <p className="text-center text-[11px] font-medium text-slate-500">
+                Not enough credit balance? <button onClick={() => toast.info("Redirecting to Credit Application...")} className="text-primary font-bold hover:underline">Apply for more credit</button>
+              </p>
+            )}
           </div>
         </div>
       </motion.div>
@@ -456,25 +504,27 @@ export function ResultSection({
           insurance: insuranceFee,
           surcharge: surcharge,
           service: currentServiceName,
+          incoterm: selectedIncoterm,
+          eta: estDelivery,
           items: packages.length,
           weight: totalWeightCeil,
-          receiver: { 
-            name: receiver?.name || 'Jane Doe',
-            street: receiver?.street || '123 Business Bay, Orchard Rd',
-            city: receiver?.city || 'Singapore Central',
-            state: receiver?.state || 'Singapore',
-            zip: receiver?.zip || '238823',
-            country: LOCATIONS.destinations.find(d => d.code === receiver?.country)?.country || receiver?.country || (destCountry === 'SG' ? 'Singapore' : destCountry),
-            phone: receiver?.phone || '+65 9123 4567'
+          consignee: { 
+            name: consignee?.name || 'Jane Doe',
+            street: consignee?.street || '123 Business Bay, Orchard Rd',
+            city: consignee?.city || 'Singapore Central',
+            state: consignee?.state || 'Singapore',
+            zip: consignee?.zip || '238823',
+            country: LOCATIONS.destinations.find(d => d.code === consignee?.country)?.country || consignee?.country || (destCountry === 'SG' ? 'Singapore' : destCountry),
+            phone: consignee?.phone || '+65 9123 4567'
           },
-          sender: { 
-            name: sender?.name || 'John Doe',
-            street: sender?.street || 'Jl. Kemang Raya No. 12',
-            city: sender?.city || 'Jakarta South',
-            state: sender?.state || 'DKI Jakarta',
-            zip: sender?.zip || '12730',
+          shipper: { 
+            name: shipper?.name || 'John Doe',
+            street: shipper?.street || 'Jl. Kemang Raya No. 12',
+            city: shipper?.city || 'Jakarta South',
+            state: shipper?.state || 'DKI Jakarta',
+            zip: shipper?.zip || '12730',
             country: 'Indonesia',
-            phone: sender?.phone || '+62 812 3456 7890'
+            phone: shipper?.phone || '+62 812 3456 7890'
           }
         }}
         onSuccess={(method) => {

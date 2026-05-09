@@ -187,10 +187,8 @@ export function HeroAIChat() {
 
       // 5. Item Types
       const ITEMS = {
-        clothes: ['clothes', 'baju', 'pakaian', 'fashion'],
-        electronics: ['electronics', 'gadget', 'phone', 'laptop', 'camera'],
-        documents: ['doc', 'paper', 'surat', 'file'],
-        food: ['food', 'makanan', 'snack']
+        documents: ['doc', 'paper', 'surat', 'file', 'document'],
+        goods: ['goods', 'barang', 'box', 'package', 'clothes', 'electronics', 'food', 'baju', 'pakaian', 'fashion', 'gadget', 'phone', 'laptop', 'camera']
       };
 
       Object.entries(ITEMS).forEach(([key, keywords]) => {
@@ -298,7 +296,7 @@ export function HeroAIChat() {
       {responseType === 'none' && !isProcessing && (
         <div className="flex flex-wrap items-center justify-center gap-3 max-w-2xl px-4">
           <span className="text-white/20 text-[10px] font-black uppercase tracking-widest w-full text-center mb-1">Quick actions</span>
-          {['Send documents', 'Send clothes', 'Send electronics'].map((chip) => (
+          {['✈ Send Documents', '📦 Send Goods'].map((chip) => (
             <button
               key={chip}
               onClick={() => handleSuggestionClick(chip)}

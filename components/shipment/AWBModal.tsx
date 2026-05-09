@@ -56,7 +56,7 @@ export function AWBModal({ shipment, isOpen, onClose }: AWBModalProps) {
             </div>
             <div>
               <h2 className="text-lg font-black text-slate-800 leading-tight">Airway Bill Preview</h2>
-              <p className="text-xs text-slate-500 font-medium">{shipment.id} • {shipment.receiver.country}</p>
+              <p className="text-xs text-slate-500 font-medium">{shipment.id} • {shipment.consignee.country}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">

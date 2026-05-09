@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { Info } from 'lucide-react';
 
 export default function AdminSettings() {
   const [activeTab, setActiveTab] = useState('General');
@@ -17,7 +18,7 @@ export default function AdminSettings() {
         {/* Settings Sidebar */}
         <div className="w-full md:w-64 border-r border-slate-200 bg-slate-50 p-4">
           <nav className="flex flex-row md:flex-col space-x-2 md:space-x-0 md:space-y-1 overflow-x-auto md:overflow-visible">
-            {['General', 'Notifications', 'Integrations', 'Users'].map(tab => (
+            {['General', 'Shipping Rates', 'Notifications', 'Integrations', 'Users'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -64,6 +65,64 @@ export default function AdminSettings() {
                 <button type="button" className="bg-primary text-white font-bold px-6 py-2 rounded-lg text-sm hover:bg-primary/90 transition-colors shadow-sm">
                   Save Changes
                 </button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Shipping Rates' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                <h2 className="text-lg font-black text-slate-800 tracking-tight">Shipping Rates & ETA Management</h2>
+                <button className="text-xs font-bold bg-primary text-white px-3 py-1.5 rounded-lg shadow-sm">Add New Zone</button>
+              </div>
+
+              <div className="overflow-x-auto border border-slate-100 rounded-lg">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="p-3 text-[10px] font-black uppercase text-slate-400">Zone</th>
+                      <th className="p-3 text-[10px] font-black uppercase text-slate-400 text-center">Saver Rate/kg</th>
+                      <th className="p-3 text-[10px] font-black uppercase text-slate-400 text-center">Saver ETA</th>
+                      <th className="p-3 text-[10px] font-black uppercase text-slate-400 text-center">Express Rate/kg</th>
+                      <th className="p-3 text-[10px] font-black uppercase text-slate-400 text-center">Express ETA</th>
+                      <th className="p-3 text-[10px] font-black uppercase text-slate-400 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {[
+                      { zone: 'Zone A (SG, MY)', saver: 45000, saverEta: '3-5 days', express: 85000, expressEta: '1-2 days' },
+                      { zone: 'Zone B (JP, KR)', saver: 75000, saverEta: '4-6 days', express: 145000, expressEta: '2-3 days' },
+                      { zone: 'Zone C (AU, NZ)', saver: 110000, saverEta: '5-7 days', express: 190000, expressEta: '3-4 days' },
+                      { zone: 'Zone D (US, CA)', saver: 180000, saverEta: '7-10 days', express: 320000, expressEta: '4-5 days' },
+                    ].map((row, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                        <td className="p-3 text-[13px] font-bold text-slate-700">{row.zone}</td>
+                        <td className="p-3 text-center">
+                          <input type="text" defaultValue={row.saver} className="w-16 text-center border rounded px-1 py-0.5 text-xs font-medium" />
+                        </td>
+                        <td className="p-3 text-center">
+                          <input type="text" defaultValue={row.saverEta} className="w-20 text-center border rounded px-1 py-0.5 text-xs font-medium" />
+                        </td>
+                        <td className="p-3 text-center">
+                          <input type="text" defaultValue={row.express} className="w-16 text-center border rounded px-1 py-0.5 text-xs font-medium" />
+                        </td>
+                        <td className="p-3 text-center">
+                          <input type="text" defaultValue={row.expressEta} className="w-20 text-center border rounded px-1 py-0.5 text-xs font-medium" />
+                        </td>
+                        <td className="p-3 text-right">
+                          <button className="text-[10px] font-black text-primary hover:underline bg-primary/5 px-2 py-1 rounded">SAVE</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg flex gap-3">
+                <Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-blue-800 font-medium leading-relaxed">
+                  Changes to rates and ETA will be applied immediately to the customer-facing booking engine.
+                </p>
               </div>
             </div>
           )}

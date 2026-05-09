@@ -1,14 +1,18 @@
-import { Plus, Trash2, Package, Upload, Download } from 'lucide-react';
+import { Plus, Trash2, Package, Upload, Download, Image as ImageIcon, Camera } from 'lucide-react';
 import { PackageItem, calculateChargeableWeight } from '@/lib/shipping';
 import { motion } from 'motion/react';
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 
-export function PackageBuilder({ packages, setPackages }: { 
+export function PackageBuilder({ packages, setPackages, itemType = 'Goods' }: { 
   packages: PackageItem[], 
-  setPackages: React.Dispatch<React.SetStateAction<PackageItem[]>> 
+  setPackages: React.Dispatch<React.SetStateAction<PackageItem[]>>,
+  itemType?: string
 }) {
   const [error, setError] = useState<string | null>(null);
   
+  const isDocuments = itemType.toLowerCase() === 'documents';
+
   const addPackage = () => {
     setPackages([...packages, { 
       id: Math.random().toString(), 
@@ -47,16 +51,16 @@ export function PackageBuilder({ packages, setPackages }: {
         if (lines.length < 2) throw new Error('Empty or invalid CSV');
 
         const headers = lines[0].split(',').map(h => h.replace(/["']/g, '').trim().toLowerCase());
-        const expectedHeaders = ['package_size', 'length_cm', 'width_cm', 'height_cm', 'weight_kg', 'declared_value_usd'];
+        const expectedHeaders = ['package_size', 'length_cm', 'width_cm', 'height_cm', 'weight_kg', 'declared_value_usd', 'unpacked_photo_url', 'box_photo_url'];
         
-        if (!expectedHeaders.every(h => headers.includes(h))) {
-          throw new Error('Invalid columns');
+        if (!headers.includes('package_size') || !headers.includes('weight_kg')) {
+          throw new Error('Invalid columns. Required: package_size, weight_kg');
         }
 
         const newPackages: PackageItem[] = [];
         for (let i = 1; i < lines.length; i++) {
           const values = lines[i].split(',').map(v => v.trim());
-          if (values.length !== headers.length) throw new Error('Invalid row length');
+          if (values.length < 2) continue; // Skip empty lines
           
           const pSizeRaw = values[headers.indexOf('package_size')]?.replace(/["']/g, '');
           const pSize = pSizeRaw ? pSizeRaw.charAt(0).toUpperCase() + pSizeRaw.slice(1).toLowerCase() : '';
@@ -66,8 +70,11 @@ export function PackageBuilder({ packages, setPackages }: {
           const pWeight = Number(values[headers.indexOf('weight_kg')]?.replace(/["']/g, ''));
           const pValue = Number(values[headers.indexOf('declared_value_usd')]?.replace(/["']/g, ''));
           
-          if (!pSize || !pWeight || !pValue || isNaN(pWeight) || isNaN(pValue)) {
-              throw new Error('Empty required fields');
+          const unpackedPhoto = headers.indexOf('unpacked_photo_url') > -1 ? values[headers.indexOf('unpacked_photo_url')] : undefined;
+          const boxPhoto = headers.indexOf('box_photo_url') > -1 ? values[headers.indexOf('box_photo_url')] : undefined;
+
+          if (!pSize || isNaN(pWeight)) {
+              continue;
           }
 
           newPackages.push({
@@ -77,7 +84,9 @@ export function PackageBuilder({ packages, setPackages }: {
             width: pWidth || undefined,
             height: pHeight || undefined,
             weight: pWeight,
-            valueUsd: pValue
+            valueUsd: pValue || 0,
+            unpackedPhoto: unpackedPhoto,
+            boxPhoto: boxPhoto
           });
         }
         
@@ -92,7 +101,7 @@ export function PackageBuilder({ packages, setPackages }: {
   };
 
   const downloadTemplate = () => {
-    const csvContent = "data:text/csv;charset=utf-8,package_size,length_cm,width_cm,height_cm,weight_kg,declared_value_usd\nMedium,30,30,20,1,50";
+    const csvContent = "data:text/csv;charset=utf-8,package_size,length_cm,width_cm,height_cm,weight_kg,declared_value_usd,unpacked_photo_url,box_photo_url\nMedium,30,30,20,1,50,,";
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -171,60 +180,64 @@ export function PackageBuilder({ packages, setPackages }: {
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
               {/* Size Preset */}
-              <div className="col-span-12 md:col-span-3 flex flex-col gap-[6px]">
-                <label className="text-[11px] font-bold text-slate-500 uppercase">Package Size</label>
-                <select 
-                  title="Package Size"
-                  className="px-3 py-2 border border-[#e2e8f0] rounded-md text-[13px] outline-none focus:border-primary bg-white w-full transition-all focus:ring-2 focus:ring-primary/20"
-                  value={pkg.size}
-                  onChange={(e) => updatePackage(pkg.id, 'size', e.target.value)}
-                >
-                  <option value="Small">Small (20x20x10cm)</option>
-                  <option value="Medium">Medium (30x30x20cm)</option>
-                  <option value="Large">Large (50x40x30cm)</option>
-                  <option value="Custom">Custom Size</option>
-                </select>
-              </div>
+              {!isDocuments && (
+                <div className="col-span-12 md:col-span-3 flex flex-col gap-[6px]">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase">Package Size</label>
+                  <select 
+                    title="Package Size"
+                    className="px-3 py-2 border border-[#e2e8f0] rounded-md text-[13px] outline-none focus:border-primary bg-white w-full transition-all focus:ring-2 focus:ring-primary/20"
+                    value={pkg.size}
+                    onChange={(e) => updatePackage(pkg.id, 'size', e.target.value)}
+                  >
+                    <option value="Small">Small (20x20x10cm)</option>
+                    <option value="Medium">Medium (30x30x20cm)</option>
+                    <option value="Large">Large (50x40x30cm)</option>
+                    <option value="Custom">Custom Size</option>
+                  </select>
+                </div>
+              )}
 
               {/* Dimensions (if custom) */}
-              <div className="col-span-12 md:col-span-4 grid grid-cols-3 gap-2">
-                <div className="flex flex-col gap-[6px]">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase text-center">L (cm)</label>
-                  <input 
-                    type="number" 
-                    title="Length"
-                    disabled={pkg.size !== 'Custom'}
-                    className="px-2 py-2 border border-[#e2e8f0] rounded-md text-[13px] outline-none focus:border-primary disabled:bg-slate-100 text-center w-full transition-all focus:ring-2 focus:ring-primary/20"
-                    value={pkg.length || ''}
-                    onChange={(e) => updatePackage(pkg.id, 'length', Number(e.target.value))}
-                  />
+              {!isDocuments && (
+                <div className="col-span-12 md:col-span-4 grid grid-cols-3 gap-2">
+                  <div className="flex flex-col gap-[6px]">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase text-center">L (cm)</label>
+                    <input 
+                      type="number" 
+                      title="Length"
+                      disabled={pkg.size !== 'Custom'}
+                      className="px-2 py-2 border border-[#e2e8f0] rounded-md text-[13px] outline-none focus:border-primary disabled:bg-slate-100 text-center w-full transition-all focus:ring-2 focus:ring-primary/20"
+                      value={pkg.length || ''}
+                      onChange={(e) => updatePackage(pkg.id, 'length', Number(e.target.value))}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-[6px]">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase text-center">W (cm)</label>
+                    <input 
+                      type="number" 
+                      title="Width"
+                      disabled={pkg.size !== 'Custom'}
+                      className="px-2 py-2 border border-[#e2e8f0] rounded-md text-[13px] outline-none focus:border-primary disabled:bg-slate-100 text-center w-full transition-all focus:ring-2 focus:ring-primary/20"
+                      value={pkg.width || ''}
+                      onChange={(e) => updatePackage(pkg.id, 'width', Number(e.target.value))}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-[6px]">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase text-center">H (cm)</label>
+                    <input 
+                      type="number" 
+                      title="Height"
+                      disabled={pkg.size !== 'Custom'}
+                      className="px-2 py-2 border border-[#e2e8f0] rounded-md text-[13px] outline-none focus:border-primary disabled:bg-slate-100 text-center w-full transition-all focus:ring-2 focus:ring-primary/20"
+                      value={pkg.height || ''}
+                      onChange={(e) => updatePackage(pkg.id, 'height', Number(e.target.value))}
+                    />
+                  </div>
                 </div>
-                <div className="flex flex-col gap-[6px]">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase text-center">W (cm)</label>
-                  <input 
-                    type="number" 
-                    title="Width"
-                    disabled={pkg.size !== 'Custom'}
-                    className="px-2 py-2 border border-[#e2e8f0] rounded-md text-[13px] outline-none focus:border-primary disabled:bg-slate-100 text-center w-full transition-all focus:ring-2 focus:ring-primary/20"
-                    value={pkg.width || ''}
-                    onChange={(e) => updatePackage(pkg.id, 'width', Number(e.target.value))}
-                  />
-                </div>
-                <div className="flex flex-col gap-[6px]">
-                  <label className="text-[11px] font-bold text-slate-500 uppercase text-center">H (cm)</label>
-                  <input 
-                    type="number" 
-                    title="Height"
-                    disabled={pkg.size !== 'Custom'}
-                    className="px-2 py-2 border border-[#e2e8f0] rounded-md text-[13px] outline-none focus:border-primary disabled:bg-slate-100 text-center w-full transition-all focus:ring-2 focus:ring-primary/20"
-                    value={pkg.height || ''}
-                    onChange={(e) => updatePackage(pkg.id, 'height', Number(e.target.value))}
-                  />
-                </div>
-              </div>
+              )}
 
               {/* Weight */}
-              <div className="col-span-12 md:col-span-2 flex flex-col gap-[6px]">
+              <div className={isDocuments ? "col-span-12 md:col-span-6 flex flex-col gap-[6px]" : "col-span-12 md:col-span-2 flex flex-col gap-[6px]"}>
                 <label className="text-[11px] font-bold text-slate-500 uppercase">Weight (kg)</label>
                 <div className="relative">
                   <input 
@@ -240,20 +253,119 @@ export function PackageBuilder({ packages, setPackages }: {
               </div>
 
               {/* Value */}
-              <div className="col-span-12 md:col-span-3 flex flex-col gap-[6px]">
-                <label className="text-[11px] font-bold text-slate-500 uppercase">Declared Value</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2 text-[12px] text-slate-500">$</span>
-                  <input 
-                    type="number" 
-                    title="Value"
-                    min="1"
-                    className="pl-7 pr-3 py-2 border border-[#e2e8f0] rounded-md text-[13px] outline-none focus:border-primary w-full transition-all focus:ring-2 focus:ring-primary/20"
-                    value={pkg.valueUsd || ''}
-                    onChange={(e) => updatePackage(pkg.id, 'valueUsd', Number(e.target.value))}
-                  />
+              {!isDocuments && (
+                <div className="col-span-12 md:col-span-3 flex flex-col gap-[6px]">
+                  <label className="text-[11px] font-bold text-slate-500 uppercase">Declared Value</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2 text-[12px] text-slate-500">$</span>
+                    <input 
+                      type="number" 
+                      title="Value"
+                      min="1"
+                      className="pl-7 pr-3 py-2 border border-[#e2e8f0] rounded-md text-[13px] outline-none focus:border-primary w-full transition-all focus:ring-2 focus:ring-primary/20"
+                      value={pkg.valueUsd || ''}
+                      onChange={(e) => updatePackage(pkg.id, 'valueUsd', Number(e.target.value))}
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Photos (Optional) */}
+              {!isDocuments && (
+                <div className="col-span-12 grid grid-cols-1 md:grid-cols-2 gap-3 mt-1">
+                  <div className="flex flex-col gap-[6px]">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1.5 ring-offset-2 ring-1 ring-slate-100 px-2 py-0.5 rounded w-fit">
+                      <ImageIcon className="h-3 w-3" /> Unpacked Item Photo (Optional)
+                    </label>
+                    <div className="flex items-center gap-2">
+                       <label className="flex-1 cursor-pointer group">
+                        <div className="flex items-center justify-between px-3 py-2 border border-[#e2e8f0] bg-white rounded-md text-[12px] hover:border-primary transition-all group-hover:bg-slate-50">
+                          <span className={cn("truncate max-w-[120px] font-medium", pkg.unpackedPhoto ? "text-primary" : "text-slate-400")}>
+                            {pkg.unpackedPhoto ? "Photo Uploaded" : "Upload Image..."}
+                          </span>
+                          <Camera className="h-3.5 w-3.5 text-slate-400 group-hover:text-primary" />
+                        </div>
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                updatePackage(pkg.id, 'unpackedPhoto', reader.result as string);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </label>
+                      {pkg.unpackedPhoto && (
+                        <div className="flex items-center gap-2">
+                          <img 
+                            src={pkg.unpackedPhoto} 
+                            alt="Unpacked Preview" 
+                            className="h-8 w-8 rounded object-cover border border-slate-200"
+                          />
+                          <button 
+                            onClick={() => updatePackage(pkg.id, 'unpackedPhoto', undefined)}
+                            className="text-[10px] font-bold text-red-500 hover:underline"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-[6px]">
+                    <label className="text-[11px] font-bold text-slate-500 uppercase flex items-center gap-1.5 ring-offset-2 ring-1 ring-slate-100 px-2 py-0.5 rounded w-fit">
+                      <ImageIcon className="h-3 w-3" /> Box / Colly Photo (Optional)
+                    </label>
+                    <div className="flex items-center gap-2">
+                       <label className="flex-1 cursor-pointer group">
+                        <div className="flex items-center justify-between px-3 py-2 border border-[#e2e8f0] bg-white rounded-md text-[12px] hover:border-primary transition-all group-hover:bg-slate-50">
+                          <span className={cn("truncate max-w-[120px] font-medium", pkg.boxPhoto ? "text-primary" : "text-slate-400")}>
+                            {pkg.boxPhoto ? "Photo Uploaded" : "Upload Image..."}
+                          </span>
+                          <Camera className="h-3.5 w-3.5 text-slate-400 group-hover:text-primary" />
+                        </div>
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                updatePackage(pkg.id, 'boxPhoto', reader.result as string);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                      </label>
+                      {pkg.boxPhoto && (
+                        <div className="flex items-center gap-2">
+                          <img 
+                            src={pkg.boxPhoto} 
+                            alt="Box Preview" 
+                            className="h-8 w-8 rounded object-cover border border-slate-200"
+                          />
+                          <button 
+                            onClick={() => updatePackage(pkg.id, 'boxPhoto', undefined)}
+                            className="text-[10px] font-bold text-red-500 hover:underline"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         ))}

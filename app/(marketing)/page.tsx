@@ -1,16 +1,23 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { 
-  ArrowRight, Zap, Truck, Shield, MapPin, CheckCircle2, Globe2, Star, TrendingUp, FileText
+  ArrowRight, Zap, Truck, Shield, MapPin, CheckCircle2, Globe2, Star, TrendingUp, FileText, X
 } from 'lucide-react';
 import { HeroAIChat } from '@/components/shipment/HeroAIChat';
 import { PricingSection } from '@/components/landing/PricingSection';
 import { HowItWorksSection } from '@/components/landing/HowItWorksSection';
 import * as motion from 'motion/react-client';
-import { useScroll, useTransform } from 'motion/react';
+import { useScroll, useTransform, AnimatePresence } from 'motion/react';
+
+const PROMO_CONFIG = {
+  title: "Special Rates for New Customers",
+  description: "Get 10% off your first shipment. Limited time only.",
+  cta: "Get Started",
+  active: true
+};
 
 export default function LandingPage() {
   const containerRef = useRef(null);
@@ -22,6 +29,21 @@ export default function LandingPage() {
   const heroVideoY = useTransform(scrollYProgress, [0, 0.2], [0, 100]);
   const heroContentY = useTransform(scrollYProgress, [0, 0.2], [0, -50]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+
+  const [showPromo, setShowPromo] = useState(false);
+
+  useEffect(() => {
+    if (PROMO_CONFIG.active) {
+      const timer = setTimeout(() => {
+        setShowPromo(true);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const dismissPromo = () => {
+    setShowPromo(false);
+  };
 
   const stats = [
     { label: 'Orders Delivered', value: '500K+' },
@@ -380,6 +402,52 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* PROMO POPUP */}
+      {typeof window !== 'undefined' && PROMO_CONFIG.active && (
+        <AnimatePresence>
+          {showPromo && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="relative w-full max-w-md bg-white rounded-3xl p-8 shadow-2xl border border-slate-100 overflow-hidden"
+              >
+                <div className="absolute top-0 left-0 w-full h-2 bg-[#f44d4c]"></div>
+                <button
+                  onClick={dismissPromo}
+                  className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  <X size={24} />
+                </button>
+                <div className="mt-4 mb-8">
+                  <div className="w-12 h-12 rounded-2xl bg-[#f44d4c]/10 text-[#f44d4c] flex items-center justify-center mb-6">
+                    <Zap size={24} className="fill-current" />
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-tight mb-3">
+                    {PROMO_CONFIG.title}
+                  </h3>
+                  <p className="text-slate-500 font-medium">
+                    {PROMO_CONFIG.description}
+                  </p>
+                </div>
+                <button
+                  onClick={dismissPromo}
+                  className="w-full py-4 bg-[#f44d4c] text-white rounded-xl font-black text-sm uppercase tracking-widest hover:bg-[#d43d3c] transition-colors"
+                >
+                  {PROMO_CONFIG.cta}
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
     </div>
   );
 }

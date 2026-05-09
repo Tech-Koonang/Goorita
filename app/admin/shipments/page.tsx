@@ -1,20 +1,34 @@
 'use client';
 
 import { useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, MoreHorizontal, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function AdminShipments() {
   const [activeTab, setActiveTab] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-
-  const dummyData = [
+  const [shipments, setShipments] = useState([
     { id: 'AWB-1001', orderId: 'ORD-99230', origin: 'Jakarta', dest: 'Singapore', service: 'Express', weight: '12 kg', status: 'In Transit' },
     { id: 'AWB-1002', orderId: 'ORD-99229', origin: 'Surabaya', dest: 'Tokyo', service: 'Economy', weight: '5 kg', status: 'Delivered' },
     { id: 'AWB-1003', orderId: 'ORD-99231', origin: 'Jakarta', dest: 'Kuala Lumpur', service: 'Express', weight: '2 kg', status: 'Created' },
-  ];
+  ]);
 
-  const filtered = dummyData.filter(item => {
+  const updateStatus = (id: string, newStatus: string) => {
+    setShipments(prev => prev.map(s => {
+      if (s.id === id) {
+        if (newStatus === 'Delivered') {
+          toast.success(`Automation: Delivery email sent for ${id}`, {
+            icon: <CheckCircle2 className="text-green-500" />
+          });
+        }
+        return { ...s, status: newStatus };
+      }
+      return s;
+    }));
+  };
+
+  const filtered = shipments.filter(item => {
     const matchesTab = activeTab === 'All' || item.status === activeTab;
     const matchesSearch = item.id.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           item.orderId.toLowerCase().includes(searchQuery.toLowerCase());
@@ -66,7 +80,8 @@ export default function AdminShipments() {
                 <th className="px-6 py-4 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Destination</th>
                 <th className="px-6 py-4 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Service</th>
                 <th className="px-6 py-4 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Weight</th>
-                <th className="px-6 py-4 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                 <th className="px-6 py-4 text-left text-[11px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                <th className="px-6 py-4 text-right text-[11px] font-black text-slate-400 uppercase tracking-widest">Action</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-100">
@@ -87,6 +102,17 @@ export default function AdminShipments() {
                     )}>
                       {item.status}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <select 
+                      className="text-xs font-bold border rounded p-1"
+                      value={item.status}
+                      onChange={(e) => updateStatus(item.id, e.target.value)}
+                    >
+                      <option value="Created">Created</option>
+                      <option value="In Transit">In Transit</option>
+                      <option value="Delivered">Delivered</option>
+                    </select>
                   </td>
                 </tr>
               ))}
