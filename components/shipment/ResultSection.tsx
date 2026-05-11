@@ -1,9 +1,11 @@
-import { useState, useEffect, useId } from 'react';
+import { useState, useEffect, useId, useMemo } from 'react';
 import { ArrowLeft, CheckCircle2, Shield, Info, Truck } from 'lucide-react';
 import { 
   LOCATIONS, RATES, REMOTE_AREA_SURCHARGE, INSURANCE_RATE,
   PackageItem, calculateTotalChargeableWeight, formatIDR 
 } from '@/lib/shipping';
+import { calculateChargeableWeight } from '@/lib/pricing';
+import { fetchCountryShippingRule, CountryShippingRule, calculateSurcharges } from '@/lib/supabase-shipping';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'motion/react';
@@ -22,6 +24,48 @@ export function ResultSection({
   const [showAllOptions, setShowAllOptions] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [selectedIncoterm, setSelectedIncoterm] = useState<'DDU' | 'DDP'>('DDU');
+  const [shippingRule, setShippingRule] = useState<CountryShippingRule | null>(null);
+  const [shippingRates, setShippingRates] = useState<{ saver: number; express: number }>({ saver: 0, express: 0 });
+
+  const destInfo = LOCATIONS.destinations.find(d => d.code === destCountry);
+  const zone = destInfo?.zone || 'SEA';
+  
+  // Cast zone to keyof typeof RATES to satisfy TypeScript
+  const rateZone = RATES[zone as keyof typeof RATES] || RATES['SEA'];
+  
+  const actualWeightTotal = packages.reduce((sum: number, p: PackageItem) => sum + (p.weight || 0), 0);
+  const volumeWeightTotal = packages.reduce((sum: number, p: PackageItem) => sum + calculateChargeableWeight(p), 0);
+  const totalWeight = calculateTotalChargeableWeight(packages); // This calculates max per package, sum of maxes.
+  const totalWeightCeil = Math.ceil(totalWeight);
+
+  useEffect(() => {
+    let active = true;
+    
+    // Fetch rules and rates concurrently
+    Promise.all([
+      fetchCountryShippingRule(destCountry),
+      import('@/lib/supabase-shipping').then(m => Promise.all([
+        m.getBaseShippingRate(zone, 'saver', actualWeightTotal, volumeWeightTotal),
+        m.getBaseShippingRate(zone, 'express', actualWeightTotal, volumeWeightTotal)
+      ]))
+    ]).then(([rule, [saverRate, expressRate]]) => {
+      if (active) {
+        setShippingRule(rule);
+        setShippingRates({ saver: saverRate, express: expressRate });
+      }
+    });
+
+    return () => { active = false; };
+  }, [destCountry, zone, actualWeightTotal, volumeWeightTotal]);
+
+  const allowedIncoterms: ('DDU' | 'DDP')[] = useMemo(() => shippingRule ? (shippingRule.incoterms_allowed as ('DDU' | 'DDP')[]) : ['DDU', 'DDP'], [shippingRule]);
+
+  useEffect(() => {
+    if (!allowedIncoterms.includes(selectedIncoterm)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelectedIncoterm(allowedIncoterms[0]);
+    }
+  }, [destCountry, allowedIncoterms, selectedIncoterm]);
   
   // New State for B2C vs B2B
   const [customerType, setCustomerType] = useState<'B2C' | 'B2B'>('B2C');
@@ -53,23 +97,22 @@ export function ResultSection({
     }
   }, [isLoggedIn]);
 
-  const destInfo = LOCATIONS.destinations.find(d => d.code === destCountry);
-  const zone = destInfo?.zone || 'A';
-  
-  // Cast zone to keyof typeof RATES to satisfy TypeScript
-  const rateZone = RATES[zone as keyof typeof RATES];
-  
-  const totalWeight = calculateTotalChargeableWeight(packages);
-  const totalWeightCeil = Math.ceil(totalWeight);
   const totalValueUsd = packages.reduce((acc: number, p: PackageItem) => acc + (p.valueUsd || 0), 0);
   const insuranceFee = totalValueUsd * INSURANCE_RATE * 15000; // rough IDR conversion
 
-  const saverBase = rateZone.saver * totalWeightCeil;
-  const expressBase = rateZone.express * totalWeightCeil;
-  const surcharge = isRemoteArea ? REMOTE_AREA_SURCHARGE : 0;
+  const roundedWeight = totalWeight >= 31 ? Math.ceil(totalWeight) : Math.ceil(totalWeight * 2) / 2;
 
-  const saverTotal = saverBase + surcharge + insuranceFee;
-  const expressTotal = expressBase + surcharge + insuranceFee;
+  const { ddpSurcharge, handlingSurcharge, remoteAreaSurcharge } = shippingRule 
+    ? calculateSurcharges(shippingRule, packages, selectedIncoterm, isRemoteArea)
+    : { ddpSurcharge: 0, handlingSurcharge: 0, remoteAreaSurcharge: isRemoteArea ? REMOTE_AREA_SURCHARGE : 0 };
+
+  const priceMultiplier = customerType === 'B2C' ? 1.2 : 1.0;
+
+  const saverBase = shippingRates.saver * priceMultiplier;
+  const expressBase = shippingRates.express * priceMultiplier;
+
+  const saverTotal = saverBase + remoteAreaSurcharge + handlingSurcharge + ddpSurcharge + insuranceFee;
+  const expressTotal = expressBase + remoteAreaSurcharge + handlingSurcharge + ddpSurcharge + insuranceFee;
 
   const currentTotal = selectedService === 'saver' ? saverTotal : expressTotal;
   const currentBase = selectedService === 'saver' ? saverBase : expressBase;
@@ -126,8 +169,8 @@ export function ResultSection({
   const originName = LOCATIONS.originProvinces.find(o => o.code === originState)?.name || originState;
   const destName = LOCATIONS.destinations.find(d => d.code === destCountry)?.country || destCountry;
   const packageDetails = packages.length === 1 
-    ? `${packages[0].size === 'Custom' ? 'Custom' : packages[0].size} Box · ${totalWeightCeil}kg (Chargeable)`
-    : `${packages.length} Packages · ${totalWeightCeil}kg (Chargeable)`;
+    ? `${packages[0].size === 'Custom' ? 'Custom' : packages[0].size} Box · ${roundedWeight}kg (Chargeable)`
+    : `${packages.length} Packages · ${roundedWeight}kg (Chargeable)`;
   const packageDimensions = packages.length === 1 && packages[0].size === 'Custom'
     ? `${packages[0].length}x${packages[0].width}x${packages[0].height} cm`
     : null;
@@ -292,33 +335,83 @@ export function ResultSection({
             <p className="text-[14px] font-black uppercase tracking-[0.05em] text-slate-800 mb-4">Incoterms</p>
             <div className="flex gap-4">
               <label className={cn(
-                "flex-1 flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-all",
+                "flex-1 flex flex-col p-3 rounded-xl border-2 transition-all",
+                !allowedIncoterms.includes('DDU') ? "opacity-40 cursor-not-allowed bg-slate-50" : "cursor-pointer",
                 selectedIncoterm === 'DDU' ? "border-primary bg-primary-50" : "border-slate-100 bg-slate-50 hover:border-slate-200"
               )}>
-                <input type="radio" name="incoterm" value="DDU" checked={selectedIncoterm === 'DDU'} onChange={() => setSelectedIncoterm('DDU')} className="hidden" />
+                <input 
+                  type="radio" 
+                  name="incoterm" 
+                  value="DDU" 
+                  checked={selectedIncoterm === 'DDU'} 
+                  onChange={() => setSelectedIncoterm('DDU')} 
+                  disabled={!allowedIncoterms.includes('DDU')}
+                  className="hidden" 
+                />
                 <span className="font-black text-sm text-slate-800">DDU</span>
                 <span className="text-[10px] text-slate-500 font-medium leading-tight mt-1">Delivery Duty Unpaid·Receiver pays duties/taxes at destination.</span>
               </label>
               <label className={cn(
-                "flex-1 flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-all",
+                "flex-1 flex flex-col p-3 rounded-xl border-2 transition-all",
+                !allowedIncoterms.includes('DDP') ? "opacity-40 cursor-not-allowed bg-slate-50" : "cursor-pointer",
                 selectedIncoterm === 'DDP' ? "border-primary bg-primary-50" : "border-slate-100 bg-slate-50 hover:border-slate-200"
               )}>
-                <input type="radio" name="incoterm" value="DDP" checked={selectedIncoterm === 'DDP'} onChange={() => setSelectedIncoterm('DDP')} className="hidden" />
+                <input 
+                  type="radio" 
+                  name="incoterm" 
+                  value="DDP" 
+                  checked={selectedIncoterm === 'DDP'} 
+                  onChange={() => setSelectedIncoterm('DDP')} 
+                  disabled={!allowedIncoterms.includes('DDP')}
+                  className="hidden" 
+                />
                 <span className="font-black text-sm text-slate-800">DDP</span>
                 <span className="text-[10px] text-slate-500 font-medium leading-tight mt-1">Delivery Duty Paid·Sender covers all duties/taxes.</span>
               </label>
             </div>
+            {selectedIncoterm === 'DDU' && (
+              <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-start gap-2">
+                <Info className="h-4 w-4 text-slate-500 mt-0.5 flex-shrink-0" />
+                <p className="text-[11px] text-slate-600 font-medium leading-relaxed">
+                  <strong>Notice:</strong> Duties and taxes are the responsibility of the receiver. Your receiver may be contacted by customs to pay applicable fees before the shipment can be delivered.
+                </p>
+              </div>
+            )}
+            {selectedIncoterm === 'DDP' && (
+              <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-start gap-2">
+                <Info className="h-4 w-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                <p className="text-[11px] text-orange-800 font-medium leading-relaxed">
+                  <strong>Delivery Duty Paid:</strong> You are prepaying the estimated duties and taxes (DDP Surcharge).
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="border-t border-dashed border-[#e2e8f0] pt-6 mt-2">
             <div className="flex justify-between text-[14px] mb-3 text-slate-500 font-medium">
-              <span>Base Rate ({totalWeightCeil}kg)</span>
+              <span>Base Rate ({roundedWeight}kg)</span>
               <span className="text-slate-900">{formatIDR(currentBase)}</span>
             </div>
-            {isRemoteArea && (
+            {remoteAreaSurcharge > 0 && (
               <div className="flex justify-between text-[14px] mb-3 text-orange-600 font-medium">
                 <span>Remote Area Surcharge</span>
-                <span>{formatIDR(REMOTE_AREA_SURCHARGE)}</span>
+                <span>{formatIDR(remoteAreaSurcharge)}</span>
+              </div>
+            )}
+            {selectedIncoterm === 'DDP' ? (
+              <div className="flex justify-between text-[14px] mb-3 text-orange-600 font-medium">
+                <span>DDP Tax & Duty Appx.</span>
+                <span>{formatIDR(ddpSurcharge)}</span>
+              </div>
+            ) : (
+              <div className="flex justify-between text-[12px] mb-3 text-amber-600 font-medium bg-amber-50 p-2 rounded-md">
+                <span>DDU Applied: Duties & taxes are the receiver's responsibility at destination.</span>
+              </div>
+            )}
+            {handlingSurcharge > 0 && (
+              <div className="flex justify-between text-[14px] mb-3 text-red-600 font-medium">
+                <span>Out of bounds Handling Surcharge</span>
+                <span>{formatIDR(handlingSurcharge)}</span>
               </div>
             )}
             <div className="flex justify-between text-[14px] mb-4 text-slate-500 font-medium">
@@ -435,10 +528,28 @@ export function ResultSection({
                   <span className="text-slate-500 font-medium">Base Rate</span>
                   <span className="font-bold text-slate-800">{formatIDR(currentBase)}</span>
                 </div>
-                {surcharge > 0 && (
+                {remoteAreaSurcharge > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 font-medium">Remote Surcharge</span>
-                    <span className="font-bold text-slate-800">{formatIDR(surcharge)}</span>
+                    <span className="text-orange-600 font-medium">Remote Surcharge</span>
+                    <span className="font-bold text-slate-800">{formatIDR(remoteAreaSurcharge)}</span>
+                  </div>
+                )}
+                {selectedIncoterm === 'DDP' ? (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-orange-600 font-medium">DDP Surcharge</span>
+                    <span className="font-bold text-slate-800">{formatIDR(ddpSurcharge)}</span>
+                  </div>
+                ) : (
+                  <div className="bg-amber-50 p-2 rounded mt-2">
+                    <span className="text-[11px] text-amber-700 font-medium block leading-tight">
+                      DDU limit: Duties & taxes responsibility of receiver.
+                    </span>
+                  </div>
+                )}
+                {handlingSurcharge > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-red-600 font-medium">Handling Surcharge</span>
+                    <span className="font-bold text-slate-800">{formatIDR(handlingSurcharge)}</span>
                   </div>
                 )}
                 {insuranceFee > 0 && (
@@ -502,7 +613,7 @@ export function ResultSection({
           total: currentTotal,
           baseRate: currentBase,
           insurance: insuranceFee,
-          surcharge: surcharge,
+          surcharge: remoteAreaSurcharge + handlingSurcharge + ddpSurcharge,
           service: currentServiceName,
           incoterm: selectedIncoterm,
           eta: estDelivery,
