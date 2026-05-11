@@ -9,7 +9,7 @@ export function calculateChargeableWeight(item: PackageItem): number {
   } else if (item.size === 'Small') {
     volumeWeight = (20 * 20 * 10) / 5000; // 0.8kg
   } else if (item.size === 'Medium') {
-    volumeWeight = (30 * 30 * 20) / 5000; // 3.6kg
+    volumeWeight = (40 * 30 * 25) / 5000; // 6kg
   } else if (item.size === 'Large') {
     volumeWeight = (50 * 40 * 30) / 5000; // 12kg
   }

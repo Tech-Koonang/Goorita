@@ -1,5 +1,5 @@
 {
-  "name": "Remix: Goorita Send",
+  "name": "Remix: Remix: Goorita Send",
   "description": "An interactive frontend demo for Goorita Send, an international shipping platform providing door-to-door delivery.",
   "requestFramePermissions": [
     "microphone"

@@ -101,7 +101,7 @@ export function PackageBuilder({ packages, setPackages, itemType = 'Goods' }: {
   };
 
   const downloadTemplate = () => {
-    const csvContent = "data:text/csv;charset=utf-8,package_size,length_cm,width_cm,height_cm,weight_kg,declared_value_usd,unpacked_photo_url,box_photo_url\nMedium,30,30,20,1,50,,";
+    const csvContent = "data:text/csv;charset=utf-8,package_size,length_cm,width_cm,height_cm,weight_kg,declared_value_usd,unpacked_photo_url,box_photo_url\nMedium,40,30,25,1,50,,";
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -190,7 +190,7 @@ export function PackageBuilder({ packages, setPackages, itemType = 'Goods' }: {
                     onChange={(e) => updatePackage(pkg.id, 'size', e.target.value)}
                   >
                     <option value="Small">Small (20x20x10cm)</option>
-                    <option value="Medium">Medium (30x30x20cm)</option>
+                    <option value="Medium">Medium (40x30x25cm)</option>
                     <option value="Large">Large (50x40x30cm)</option>
                     <option value="Custom">Custom Size</option>
                   </select>
